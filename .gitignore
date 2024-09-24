@@ -1,3 +1,12 @@
+# my folders
+err/
+out/
+mnist/
+
+# cm repo stuff
+models2/
+utils2/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

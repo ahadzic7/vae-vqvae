@@ -1,51 +1,29 @@
 import numpy as np
 import time
-
 import torch
 import torch.nn.functional as F
 from torch.distributions.normal import Normal
-
 from torchvision import datasets, transforms
 from torchvision.utils import save_image
-
-from modules import VAE
-
+from classes.modules import VAE
 
 BATCH_SIZE = 32
 N_EPOCHS = 100
 PRINT_INTERVAL = 500
-DATASET = 'FashionMNIST'  # CIFAR10 | MNIST | FashionMNIST
-NUM_WORKERS = 4
+DATASET = 'MNIST'
+NUM_WORKERS = 2
+
+preproc = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
+ds_train = datasets.MNIST('./data/MNIST/', train=True, download=True, transform=preproc,)
+train_loader = torch.utils.data.DataLoader(ds_train, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True)
+ds_test = datasets.MNIST('./data/MNIST/', train=False, transform=preproc)
+test_loader = torch.utils.data.DataLoader(ds_test, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True)
 
 INPUT_DIM = 1
 DIM = 256
 Z_DIM = 128
-LR = 1e-3
-
-
-preproc_transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-])
-train_loader = torch.utils.data.DataLoader(
-    eval('datasets.'+DATASET)(
-        '../data/{}/'.format(DATASET), train=True, download=True,
-        transform=preproc_transform,
-    ), batch_size=BATCH_SIZE, shuffle=False,
-    num_workers=NUM_WORKERS, pin_memory=True
-)
-test_loader = torch.utils.data.DataLoader(
-    eval('datasets.'+DATASET)(
-        '../data/{}/'.format(DATASET), train=False,
-        transform=preproc_transform
-    ), batch_size=BATCH_SIZE, shuffle=False,
-    num_workers=NUM_WORKERS, pin_memory=True
-)
-
 model = VAE(INPUT_DIM, DIM, Z_DIM).cuda()
-print(model)
-opt = torch.optim.Adam(model.parameters(), lr=LR, amsgrad=True)
-
+opt = torch.optim.Adam(model.parameters(), lr=1e-3, amsgrad=True)
 
 def train():
     train_loss = []
@@ -69,11 +47,10 @@ def train():
         train_loss.append([log_px, loss.item()])
 
         if (batch_idx + 1) % PRINT_INTERVAL == 0:
-            print('\tIter [{}/{} ({:.0f}%)]\tLoss: {} Time: {:5.3f} ms/batch'.format(
+            print('\tIter [{}/{} ({:.0f}%)]\tLoss: {}'.format(
                 batch_idx * len(x), len(train_loader.dataset),
                 PRINT_INTERVAL * batch_idx / len(train_loader),
                 np.asarray(train_loss)[-PRINT_INTERVAL:].mean(0),
-                1000 * (time.time() - start_time)
             ))
 
 
@@ -89,27 +66,20 @@ def test():
             loss = loss_recons + kl_d
             val_loss.append(loss.item())
 
-    print('\nValidation Completed!\tLoss: {:5.4f} Time: {:5.3f} s'.format(
-        np.asarray(val_loss).mean(0),
-        time.time() - start_time
-    ))
+    print(f'\nValidation Completed!\tLoss: {np.asarray(val_loss).mean(0):5.4f}')
     return np.asarray(val_loss).mean(0)
 
 
 def generate_reconstructions():
     model.eval()
-    x, _ = test_loader.__iter__().next()
+    x, _ = next(iter(test_loader))
     x = x[:32].cuda()
     x_tilde, kl_div = model(x)
 
     x_cat = torch.cat([x, x_tilde], 0)
     images = (x_cat.cpu().data + 1) / 2
 
-    save_image(
-        images,
-        'samples/vae_reconstructions_{}.png'.format(DATASET),
-        nrow=8
-    )
+    save_image(images, 'samples/vae_reconstructions_{}.png'.format(DATASET), nrow=8)
 
 
 def generate_samples():
@@ -119,11 +89,7 @@ def generate_samples():
 
     images = (x_tilde.cpu().data + 1) / 2
 
-    save_image(
-        images,
-        'samples/vae_samples_{}.png'.format(DATASET),
-        nrow=8
-    )
+    save_image(images, 'samples/vae_samples_{}.png'.format(DATASET), nrow=8)
 
 
 BEST_LOSS = 99999
