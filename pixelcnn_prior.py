@@ -17,7 +17,8 @@ def train(data_loader, model, prior, optimizer, args, writer):
             images = images.to(args.device)
             latents = model.encode(images)
             latents = latents.detach()
-
+        #print(latents.shape)
+        print(labels)
         labels = labels.to(args.device)
         logits = prior(latents, labels)
         logits = logits.permute(0, 2, 3, 1).contiguous()
@@ -119,11 +120,11 @@ def main(args):
         print(epoch)
         train(train_loader, model, prior, optimizer, args, writer)
         # The validation loss is not properly computed since the classes in the train and valid splits of Mini-Imagenet do not overlap.
-        loss = test(test_loader, model, prior, args, writer)
-        if (epoch == 0) or (loss < best_loss):
-            best_loss = loss
-            with open(save_filename, 'wb') as f:
-                torch.save(prior.state_dict(), f)
+        # loss = test(test_loader, model, prior, args, writer)
+        # if (epoch == 0) or (loss < best_loss):
+        #     best_loss = loss
+        #     with open(save_filename, 'wb') as f:
+        #         torch.save(prior.state_dict(), f)
 
 
 

@@ -50,7 +50,6 @@ def main():
     # model = MyOldVQVAE(1, dim=128, K=512).to(device)
     model = MyVQVAE2(input_dim=1, dim=256, latent_dim=128, K=512).to(device)
     opt = torch.optim.Adam(model.parameters(), lr=1e-3)
-    print(model)
     best_loss = -1.
     for epoch in range(51):
         print(f'\nEpoch {epoch}')

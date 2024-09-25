@@ -63,7 +63,7 @@ def test(data_loader, model, args, writer):
 
             # Reconstruction loss (Negative Log-Likelihood)
             # NLL for each pixel: (log_var + (x - mean)^2 / variance)
-            nll = -Normal(x_tilde, torch.sqrt(torch.exp(log_var))).log_prob(x)
+            nll = -Normal(x_tilde, torch.sqrt(torch.exp(log_var))).log_prob(images)
             loss_recons = nll.mean()
             
             # Vector quantization objective (as before)

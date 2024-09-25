@@ -97,19 +97,18 @@ class MyVQVAE2(nn.Module):
     def __init__(self, input_dim, dim, latent_dim, K):
         super().__init__()
         self.VAE = MyVAE(input_dim=input_dim, dim=dim, latent_dim=latent_dim)
-
         self.codebook = VQEmbedding(K, latent_dim)
-
         self.apply(weights_init)
 
     def encode(self, x):
-        return self.VAE.encode(x)
+        z_e_x, _ = self.VAE.encode(x)
+        return self.codebook(z_e_x)
 
     def decode(self, z):
         return self.VAE.decode(z)
 
     def forward(self, x):
-        z_e_x, _ = self.encode(x)
+        z_e_x, _ = self.VAE.encode(x)
         z_q_x_st, z_q_x = self.codebook.straight_through(z_e_x)
         mean, log_var = self.decode(z_q_x_st)
         return mean, log_var, z_e_x, z_q_x

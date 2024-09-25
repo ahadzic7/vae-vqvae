@@ -208,13 +208,11 @@ class GatedMaskedConv2d(nn.Module):
 
 
 class GatedPixelCNN(nn.Module):
-    def __init__(self, input_dim=256, dim=64, n_layers=15, n_classes=10):
+    def __init__(self, input_dim=256, dim=128, n_layers=15, n_classes=10):
         super().__init__()
         self.dim = dim
-
         # Create embedding layer to embed input
         self.embedding = nn.Embedding(input_dim, dim)
-
         self.layers = nn.ModuleList()
 
         # Initial block with Mask-A convolution. Rest with Mask-B convolutions
@@ -224,33 +222,25 @@ class GatedPixelCNN(nn.Module):
             residual = False if i == 0 else True
 
             self.layers.append(GatedMaskedConv2d(mask_type, dim, kernel, residual, n_classes))
-
         # Output layer
         self.output_conv = nn.Sequential(
             nn.Conv2d(dim, 512, 1),
             nn.ReLU(True),
             nn.Conv2d(512, input_dim, 1)
         )
-
         self.apply(weights_init)
 
     def forward(self, x, label):
         shp = x.size() + (-1, )
-        x = self.embedding(x.view(-1)).view(shp)
-        x = x.permute(0, 3, 1, 2)  
-
+        x = self.embedding(x.view(-1)).view(shp).permute(0, 3, 1, 2)  # (B, C, H, W)
         x_v, x_h = (x, x)
-        # label = label.view(-1, 1, 1, 1)  # Reshape to [batch_size, 1, 1, 1]
-        # label = label.expand(x_h.size(0), 1, x_h.size(2), x_h.size(3))  # Expand to match x_h shape
-        for _, layer in enumerate(self.layers):
-            # print(layer)
-            # print(x_h.shape)
-            # print(label.shape)
+        for i, layer in enumerate(self.layers):
             x_v, x_h = layer(x_v, x_h, label)
 
         return self.output_conv(x_h)
 
-    def generate(self, label, shape=(7, 7), batch_size=64):
+
+    def generate(self, label, shape=(7, 7), batch_size=128):
         param = next(self.parameters())
         x = torch.zeros((batch_size, *shape), dtype=torch.int64, device=param.device)
 

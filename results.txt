@@ -1,0 +1,13 @@
+VAE
+* Good sampling
+Train: 14.85 Test: 14.85
+
+- Bad sampling
+Train: 15.06 Test: 15.07
+
+VQVAE
+- Good sampling
+Train: 15.12 Test: 15.15
+
+* Bad sampling
+Train: 15.01 Test: 15.02

@@ -10,7 +10,7 @@ def bits_per_dim(mixture, x, i):
     ll_px = mixture.log_prob(x) - log2.mul(i)
     ll_im = ll_px.sum(dim=[2,3])
     mix_model = ll_im.logsumexp(dim=0)
-    return -mix_model / log2.mul(784)
+    return -mix_model.div(784).div(log2)
 
 def bpd_batch(mixture, batch, i):
     return torch.tensor([bits_per_dim(mixture, x, i).item() for x in batch])
@@ -56,8 +56,8 @@ def load_model(model, model_file, device):
 def data_setup(batch_size=128):
     preproc = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
     ds_train = MNIST("./mnist", train=True, download=False, transform=preproc,)
-    train_loader = DataLoader(ds_train, batch_size=batch_size, shuffle=False, num_workers=2, pin_memory=True)
+    train_loader = DataLoader(ds_train, batch_size, shuffle=False, num_workers=2, pin_memory=True)
     ds_test = MNIST("./mnist", train=False, transform=preproc)
-    test_loader = DataLoader(ds_test, batch_size=batch_size, shuffle=False, num_workers=2, pin_memory=True)
+    test_loader = DataLoader(ds_test, batch_size, shuffle=False, num_workers=2, pin_memory=True)
     return train_loader, test_loader
 
